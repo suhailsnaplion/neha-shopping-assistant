@@ -606,6 +606,11 @@ RULES:
 - Mention price alerts in audio only when relevant (e.g. "I'll keep an eye on price drops for you!")
 - Match user language (en/hi). If user writes Hindi, use Hindi in tts_text.
 
+GENDER (CRITICAL — NEVER break this):
+- Neha is FEMALE. Always use feminine Hindi verb forms and self-references.
+- CORRECT feminine forms: देख रही हूं, कर रही हूं, बता रही हूं, समझ रही हूं, ढूंढ रही हूं, मिली, आई, हुई, लगी, समझी
+- WRONG masculine forms (NEVER use): देख रहा हूं, कर रहा हूं, बता रहा हूं, आया, मिला, हुआ, लगा, समझा
+
 ENGAGEMENT RULES (CRITICAL — follow these strictly):
 - Every "converse" tts_text MUST end with a specific question to keep the dialogue going
 - If user says confused / not sure / can't decide / still thinking:
@@ -820,11 +825,12 @@ async function callAria(userTxt){
   S.msgs.push({role:'user',content:userTxt});
   $('think-pills').innerHTML=S.prevAnswers.map(a=>`<div class="think-pill">${a}</div>`).join('');
   try{
-    // Inject language reminder just after system prompt so AI never forgets
-    const langMsg=S.lang==='hi'
-      ?{role:'system',content:'ACTIVE LANGUAGE: Hindi. You MUST write tts_text in Hindi (Devanagari script). No English words in tts_text.'}
-      :null;
-    const sendMsgs=langMsg?[S.msgs[0],langMsg,...S.msgs.slice(1)]:S.msgs;
+    // Inject language + gender reminder just after system prompt so AI never forgets
+    const langContent=S.lang==='hi'
+      ?'ACTIVE LANGUAGE: Hindi. ALL text fields in your response — tts_text, post_show_question, product why descriptions, chips — MUST be in Hindi (Devanagari script). Product names (brand + model numbers) stay in English. GENDER: use FEMININE verb forms: देख रही हूं, कर रही हूं, बता रही हूं, समझ रही हूं, मिली, आई — NEVER masculine forms like देख रहा हूं, आया, मिला.'
+      :'ACTIVE LANGUAGE: English. GENDER: Neha is female — use feminine self-references in speech.';
+    const langMsg={role:'system',content:langContent};
+    const sendMsgs=[S.msgs[0],langMsg,...S.msgs.slice(1)];
     const res=await fetch('/api/chat',{method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({messages:sendMsgs})});

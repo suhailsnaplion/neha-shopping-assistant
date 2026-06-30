@@ -607,9 +607,11 @@ RULES:
 - Match user language (en/hi). If user writes Hindi, use Hindi in tts_text.
 
 GENDER (CRITICAL — NEVER break this):
-- Neha is FEMALE. Always use feminine Hindi verb forms and self-references.
-- CORRECT feminine forms: देख रही हूं, कर रही हूं, बता रही हूं, समझ रही हूं, ढूंढ रही हूं, मिली, आई, हुई, लगी, समझी
-- WRONG masculine forms (NEVER use): देख रहा हूं, कर रहा हूं, बता रहा हूं, आया, मिला, हुआ, लगा, समझा
+- Neha is FEMALE. Use feminine verb forms ONLY for Neha's OWN actions and self-references.
+- CORRECT for Neha: देख रही हूं, कर रही हूं, बता रही हूं, समझ रही हूं, ढूंढ रही हूं, मिली, आई, हुई
+- WRONG for Neha (never): देख रहा हूं, कर रहा हूं, आया, मिला, हुआ
+- USER GENDER IS UNKNOWN — NEVER use feminine OR masculine verb agreement when speaking TO or ABOUT the user.
+- Safe user-addressing patterns (gender-neutral): आप क्या देखना चाहते हैं, आपको पसंद आया, आप बताइए, आपका बजट क्या है, आप decide करें — these avoid gendered verb agreement entirely.
 
 ENGAGEMENT RULES (CRITICAL — follow these strictly):
 - Every "converse" tts_text MUST end with a specific question to keep the dialogue going
@@ -648,7 +650,9 @@ follow_up:
 NOTE: chips MUST match the category and question. For washing machines ask about load type, for TVs ask about screen size, etc.
 
 show_products (ALWAYS exactly 3 products):
-{"action":"show_products","context_strip":"Best phones under 30K for photography","tts_text":"Based on what you shared, here are my top 3 picks. Let me walk you through each one!","post_show_question":"All three have great cameras — but which matters more to you right now: camera quality, battery, or the price?","products":[{"name":"Samsung Galaxy A55 5G","price":27999,"badge":"Aria's top pick for you","card_theme":"navy","card_emoji":"📱","image_keywords":"samsung galaxy a55 smartphone official","specs":["8GB RAM","256GB","6.6in AMOLED","5000mAh"],"why":"The Samsung A55 is a great choice — excellent 50MP camera with OIS stabilization, vibrant display, and 4 years of software updates for long-term value.","more_details":"Exynos 1480, 8GB RAM, 50MP+12MP+5MP cameras, 25W fast charging, IP67 rated","stores":{"amazon":27999,"flipkart":28499,"croma":28999},"best_store":"amazon"},{"name":"OnePlus Nord CE4","price":24999,"badge":"Best battery life","card_theme":"forest","card_emoji":"📱","image_keywords":"oneplus nord smartphone official","specs":["8GB RAM","256GB","6.7in AMOLED","5500mAh"],"why":"The Nord CE4 charges from zero to full in just 28 minutes with 100W SUPERVOOC — perfect for people always on the move.","more_details":"Snapdragon 7 Gen 3, 8GB RAM, 50MP main camera, 100W SUPERVOOC, OxygenOS","stores":{"amazon":24999,"flipkart":24499,"croma":25499},"best_store":"flipkart"},{"name":"Realme 13 Pro+","price":23999,"badge":"Best value choice","card_theme":"amber","card_emoji":"📱","image_keywords":"realme smartphone official product","specs":["12GB RAM","256GB","6.7in AMOLED","5000mAh"],"why":"Realme 13 Pro+ gives you 12GB RAM and a Sony IMX890 sensor at the most competitive price here — outstanding value if camera quality matters most.","more_details":"Snapdragon 7s Gen 3, 12GB RAM, 50MP OIS Sony IMX890, 8MP portrait lens, 67W fast charging","stores":{"amazon":23999,"flipkart":23499,"croma":24499},"best_store":"flipkart"}]}
+{"action":"show_products","context_strip":"Best phones under 30K for photography","tts_text":"Based on what you shared, here are my top 3 picks. Let me walk you through each one!","post_show_question":"All three have great cameras — but which matters more to you right now: camera quality, battery, or the price?","chips":["Camera quality","Battery life","Best price","See more options"],"products":[{"name":"Samsung Galaxy A55 5G","price":27999,"badge":"Aria's top pick for you","card_theme":"navy","card_emoji":"📱","image_keywords":"samsung galaxy a55 smartphone official","specs":["8GB RAM","256GB","6.6in AMOLED","5000mAh"],"why":"The Samsung A55 is a great choice — excellent 50MP camera with OIS stabilization, vibrant display, and 4 years of software updates for long-term value.","more_details":"Exynos 1480, 8GB RAM, 50MP+12MP+5MP cameras, 25W fast charging, IP67 rated","stores":{"amazon":27999,"flipkart":28499,"croma":28999},"best_store":"amazon"},{"name":"OnePlus Nord CE4","price":24999,"badge":"Best battery life","card_theme":"forest","card_emoji":"📱","image_keywords":"oneplus nord smartphone official","specs":["8GB RAM","256GB","6.7in AMOLED","5500mAh"],"why":"The Nord CE4 charges from zero to full in just 28 minutes with 100W SUPERVOOC — perfect for people always on the move.","more_details":"Snapdragon 7 Gen 3, 8GB RAM, 50MP main camera, 100W SUPERVOOC, OxygenOS","stores":{"amazon":24999,"flipkart":24499,"croma":25499},"best_store":"flipkart"},{"name":"Realme 13 Pro+","price":23999,"badge":"Best value choice","card_theme":"amber","card_emoji":"📱","image_keywords":"realme smartphone official product","specs":["12GB RAM","256GB","6.7in AMOLED","5000mAh"],"why":"Realme 13 Pro+ gives you 12GB RAM and a Sony IMX890 sensor at the most competitive price here — outstanding value if camera quality matters most.","more_details":"Snapdragon 7s Gen 3, 12GB RAM, 50MP OIS Sony IMX890, 8MP portrait lens, 67W fast charging","stores":{"amazon":23999,"flipkart":23499,"croma":24499},"best_store":"flipkart"}]}
+
+NOTE: chips in show_products MUST match the post_show_question topic AND be in the active language (Hindi if conversation is in Hindi).
 
 compare:
 {"action":"compare","tts_text":"Samsung leads on camera, OnePlus wins on charging speed, and Realme offers the best overall value.","product_names":["Samsung A55","Nord CE4","Realme 13 Pro+"],"specs":[{"label":"Price","values":["27,999","24,999","23,999"],"winner":2,"spoken":"Realme wins on price at just 23,999 rupees."},{"label":"Camera","values":["50MP OIS","50MP","50MP OIS Sony"],"winner":2,"spoken":"Realme has the best camera with Sony IMX890 sensor."},{"label":"Battery","values":["5000mAh","5500mAh","5000mAh"],"winner":1,"spoken":"OnePlus leads with 5500 milliamp battery."},{"label":"Charging","values":["25W","100W","67W"],"winner":1,"spoken":"OnePlus wins charging — zero to full in 28 minutes."},{"label":"RAM","values":["8GB","8GB","12GB"],"winner":2,"spoken":"Realme tops RAM with 12 gigabytes."},{"label":"OS Updates","values":["4 years","3 years","2 years"],"winner":0,"spoken":"Samsung wins on long-term support with 4 years of updates."}]}
@@ -827,8 +831,8 @@ async function callAria(userTxt){
   try{
     // Inject language + gender reminder just after system prompt so AI never forgets
     const langContent=S.lang==='hi'
-      ?'ACTIVE LANGUAGE: Hindi. ALL text fields in your response — tts_text, post_show_question, product why descriptions, chips — MUST be in Hindi (Devanagari script). Product names (brand + model numbers) stay in English. GENDER: use FEMININE verb forms: देख रही हूं, कर रही हूं, बता रही हूं, समझ रही हूं, मिली, आई — NEVER masculine forms like देख रहा हूं, आया, मिला.'
-      :'ACTIVE LANGUAGE: English. GENDER: Neha is female — use feminine self-references in speech.';
+      ?'ACTIVE LANGUAGE: Hindi. ALL text fields — tts_text, post_show_question, product why descriptions, chips — MUST be in Hindi (Devanagari script). Product brand names and model numbers stay in English. GENDER: Neha uses feminine forms for HERSELF ONLY (देख रही हूं, बता रही हूं, मिली, आई). For the USER, use gender-neutral phrasing: आप बताइए, आपको पसंद आया, आप decide करें — NEVER feminine OR masculine verb agreement for the user.'
+      :'ACTIVE LANGUAGE: English. GENDER: Neha is female — use feminine forms only for her own speech, never assume user gender.';
     const langMsg={role:'system',content:langContent};
     const sendMsgs=[S.msgs[0],langMsg,...S.msgs.slice(1)];
     const res=await fetch('/api/chat',{method:'POST',
@@ -961,7 +965,10 @@ async function routeResponse(d, earlySpoken=false){
       appendToChatFeed({type:'aria',text:followupQ});
       await speak(followupQ);
 
-      $('chat-chips').innerHTML=['Compare all 3','See more options','Send to WhatsApp','Help me decide']
+      const postChips=d.chips||(S.lang==='hi'
+        ?['तीनों compare करें','और options दिखाएं','WhatsApp पर भेजें','decide करने में help करें']
+        :['Compare all 3','See more options','Send to WhatsApp','Help me decide']);
+      $('chat-chips').innerHTML=postChips
         .map(c=>`<button class="vb-chip" onclick="chip('${c}')">${c}</button>`).join('');
       startListen();
       break;

@@ -666,7 +666,7 @@ show_purchase (when user says "how to buy", "buy now", "I'll take it", "purchase
 
 // ─── STATE ────────────────────────────────────────────────
 const S = {
-  lang:'en', msgs:[], products:[], contextStrip:'',
+  lang:'en', msgs:[{role:'system',content:SYS}], products:[], contextStrip:'',
   prevAnswers:[], followupNum:0, screen:'home',
   isSpeaking:false, isListening:false, prevScreen:'home',
   isProcessing:false,
@@ -829,6 +829,10 @@ async function callAria(userTxt){
   S.msgs.push({role:'user',content:userTxt});
   $('think-pills').innerHTML=S.prevAnswers.map(a=>`<div class="think-pill">${a}</div>`).join('');
   try{
+    // Guard: ensure system prompt is always first (in case user skipped startDemo)
+    if(!S.msgs.length||S.msgs[0]?.role!=='system'){
+      S.msgs=[{role:'system',content:SYS},...S.msgs];
+    }
     // Inject language + gender reminder just after system prompt so AI never forgets
     const langContent=S.lang==='hi'
       ?'ACTIVE LANGUAGE: Hindi. ALL text fields — tts_text, post_show_question, product why descriptions, chips — MUST be in Hindi (Devanagari script). Product brand names and model numbers stay in English. GENDER: Neha uses feminine forms for HERSELF ONLY (देख रही हूं, बता रही हूं, मिली, आई). For the USER, use gender-neutral phrasing: आप बताइए, आपको पसंद आया, आप decide करें — NEVER feminine OR masculine verb agreement for the user.'

@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Aria — HT Tech Voice Companion</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#E9EBF5;--primary:#5B5EF4;--primary-soft:#EEEEFF;
+  --surface:#fff;--text:#1A1A2E;--muted:#6B7080;
+  --amazon:#F59E0B;--flipkart:#2874F0;--croma:#1B6E3A;
+}
+body{font-family:'Inter',sans-serif;background:#1A1A2E;min-height:100vh;
+     display:flex;align-items:center;justify-content:center;}
+
+/* OVERLAY */
+#overlay{position:fixed;inset:0;background:rgba(8,8,24,.97);display:flex;
+  flex-direction:column;align-items:center;justify-content:center;z-index:1000;gap:20px}
+#overlay h1{color:#fff;font-size:30px;font-weight:700}
+#overlay p{color:rgba(255,255,255,.55);font-size:14px;text-align:center;max-width:260px}
+#btn-start{background:var(--primary);color:#fff;border:none;padding:15px 48px;
+  border-radius:50px;font-size:17px;font-weight:700;cursor:pointer;letter-spacing:.3px;
+  box-shadow:0 8px 32px rgba(91,94,244,.5)}
+#btn-start:active{transform:scale(.97)}
+
+/* PHONE — flex column: screen-area grows, bottom-nav is fixed height */
+.phone{width:390px;height:844px;background:var(--bg);border-radius:50px;
+  overflow:hidden;display:flex;flex-direction:column;
+  box-shadow:0 40px 100px rgba(0,0,0,.55)}
+
+/* SCREEN AREA — all screens live here */
+.screen-area{flex:1;position:relative;overflow:hidden;min-height:0;background:var(--bg)}
+.screen{position:absolute;inset:0;display:none;flex-direction:column;overflow:hidden}
+.screen.active{display:flex}
+
+/* BOTTOM NAV */
+.bottom-nav{height:58px;background:#fff;border-top:1px solid rgba(0,0,0,.08);
+  display:flex;align-items:stretch;flex-shrink:0}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:3px;border:none;background:none;cursor:pointer;
+  font-family:inherit;padding:0;transition:background .15s}
+.nav-btn:active{background:var(--primary-soft)}
+.nav-icon{font-size:20px;line-height:1}
+.nav-lbl{font-size:10px;font-weight:600;color:var(--muted)}
+.nav-btn.active .nav-icon{filter:none}
+.nav-btn.active .nav-lbl{color:var(--primary)}
+
+/* AVATAR CIRCLE — used everywhere, image loaded via JS */
+.av{border-radius:50%;background:linear-gradient(135deg,#5B5EF4,#a78bfa)
+  center/cover no-repeat;display:flex;align-items:center;justify-content:center;
+  color:#fff;font-size:1em;flex-shrink:0;overflow:hidden;border:2.5px solid #fff}
+.av img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+
+/* TOP BAR */
+.top-bar{display:flex;align-items:center;justify-content:space-between;
+  padding:16px 20px 0;flex-shrink:0}
+.brand{font-size:13px;font-weight:700;color:var(--primary);letter-spacing:.5px}
+.lang-btn{background:var(--primary-soft);border:none;border-radius:20px;
+  padding:5px 13px;font-size:12px;font-weight:600;color:var(--primary);cursor:pointer}
+.back-btn{background:none;border:none;font-size:22px;color:var(--text);
+  cursor:pointer;padding:0;line-height:1}
+
+/* ─── HOME ─────────────────────────────────────────────── */
+#screen-home{background:var(--bg)}
+.home-av-wrap{display:flex;flex-direction:column;align-items:center;padding:24px 0 12px}
+#home-av{width:96px;height:96px;font-size:40px;
+  box-shadow:0 8px 28px rgba(91,94,244,.3)}
+.home-name{margin-top:12px;font-size:21px;font-weight:700;color:var(--text)}
+.home-sub{margin-top:4px;font-size:13px;color:var(--muted)}
+
+.pulse-wrap{position:relative;width:72px;height:72px;margin:14px auto 6px}
+.pulse-ring{position:absolute;inset:0;border-radius:50%;border:2px solid var(--primary);
+  opacity:0;animation:pulse 2s ease-out infinite}
+.pulse-ring:nth-child(2){animation-delay:.6s}
+.pulse-ring:nth-child(3){animation-delay:1.2s}
+@keyframes pulse{0%{transform:scale(.85);opacity:.6}100%{transform:scale(1.6);opacity:0}}
+.home-mic{width:72px;height:72px;border-radius:50%;background:var(--primary);
+  border:none;color:#fff;font-size:28px;cursor:pointer;position:relative;z-index:1;
+  box-shadow:0 8px 24px rgba(91,94,244,.4);display:flex;align-items:center;justify-content:center}
+.home-mic-hint{text-align:center;font-size:12px;color:var(--muted);margin-bottom:12px}
+
+.cats-wrap{padding:0 20px;flex:1;min-height:0;overflow:hidden}
+.cats-lbl{font-size:11px;font-weight:600;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px}
+.cats-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.cat-chip{background:#fff;border:none;border-radius:14px;padding:13px 12px;
+  text-align:left;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.06);
+  display:flex;align-items:center;gap:9px;font-size:13px;
+  font-weight:500;color:var(--text);font-family:inherit}
+.cat-chip:active{background:var(--primary-soft)}
+.cat-chip span:first-child{font-size:22px}
+
+/* ─── THINK ─────────────────────────────────────────────── */
+#screen-think{background:#1A1A2E}
+.think-body{flex:1;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:18px;padding:0 28px}
+.think-orb{width:76px;height:76px;border-radius:50%;
+  background:linear-gradient(135deg,#5B5EF4,#a78bfa);
+  display:flex;align-items:center;justify-content:center;font-size:34px;
+  animation:t-pulse 1.6s ease-in-out infinite}
+@keyframes t-pulse{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(91,94,244,.4)}
+  50%{transform:scale(1.08);box-shadow:0 0 0 18px rgba(91,94,244,0)}}
+.think-txt{font-size:17px;font-weight:600;color:#fff}
+.dots-row{display:flex;gap:6px}
+.dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.35);
+  animation:dblink 1.2s ease-in-out infinite}
+.dot:nth-child(2){animation-delay:.2s}.dot:nth-child(3){animation-delay:.4s}
+@keyframes dblink{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1.2)}}
+.think-pills{display:flex;flex-wrap:wrap;gap:7px;justify-content:center}
+.think-pill{background:rgba(255,255,255,.1);border-radius:20px;
+  padding:5px 13px;font-size:12px;color:rgba(255,255,255,.8);font-weight:500}
+
+/* ─── CHAT SCREEN ───────────────────────────────────────── */
+#screen-chat{background:var(--bg)}
+.chat-feed{flex:1;overflow-y:auto;padding:14px 16px 8px;display:flex;
+  flex-direction:column;gap:10px;min-height:0;scrollbar-width:none}
+.chat-feed::-webkit-scrollbar{display:none}
+.cf-aria-row{display:flex;align-items:flex-end;gap:8px}
+.cf-aria-av{width:28px;height:28px;border-radius:50%;background:var(--primary);
+  color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;
+  justify-content:center;flex-shrink:0;margin-bottom:2px}
+.cf-aria-bubble{background:#fff;border-radius:18px 18px 18px 4px;
+  padding:10px 14px;font-size:13px;color:var(--text);line-height:1.45;
+  box-shadow:0 1px 8px rgba(0,0,0,.07);max-width:78%}
+.cf-user-row{display:flex;justify-content:flex-end}
+.cf-user-bubble{background:var(--primary);color:#fff;border-radius:18px 18px 4px 18px;
+  padding:10px 14px;font-size:13px;line-height:1.45;max-width:78%}
+.cf-products-wrap{display:flex;flex-direction:column;gap:6px}
+.cf-ctx-strip{font-size:11px;color:var(--primary);font-weight:600;padding:0 2px}
+.cf-cards-scroll{display:flex;gap:12px;overflow-x:auto;padding:4px 2px 6px;scrollbar-width:none}
+.cf-cards-scroll::-webkit-scrollbar{display:none}
+.cf-sdots{display:flex;justify-content:center;gap:5px;padding:2px 0}
+.chat-interim{padding:6px 16px;font-size:12px;color:var(--muted);font-style:italic;min-height:22px}
+.chat-bottom{background:#fff;border-top:1px solid #F0F0F5;padding:8px 14px 10px;flex-shrink:0}
+.chat-chips-row{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;scrollbar-width:none;flex-wrap:nowrap}
+.chat-chips-row::-webkit-scrollbar{display:none}
+.chat-vbar{display:flex;align-items:center;gap:10px}
+.chat-vbar-lbl{flex:1;font-size:13px;color:var(--muted);font-weight:500}
+.chat-vbar-mic{width:44px;height:44px;border-radius:50%;background:var(--primary);
+  color:#fff;border:none;font-size:20px;cursor:pointer;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;transition:all .2s}
+.chat-vbar-mic.listening{background:#EF4444;animation:mic-pulse .8s ease-in-out infinite}
+
+/* ─── FOLLOW-UP ─────────────────────────────────────────── */
+#screen-followup{background:var(--bg)}
+.ctx-strip{margin:14px 20px 0;background:rgba(91,94,244,.1);border-radius:12px;
+  padding:9px 13px;display:flex;align-items:center;gap:7px;
+  font-size:13px;color:var(--primary);font-weight:500;flex-shrink:0}
+.prev-row{padding:9px 20px 0;display:flex;flex-wrap:wrap;gap:6px;flex-shrink:0}
+.prev-pill{background:rgba(91,94,244,.12);border-radius:20px;
+  padding:3px 11px;font-size:12px;color:var(--primary);font-weight:500}
+.fu-center{flex:1;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;padding:0 24px;gap:18px;min-height:0}
+#fu-av{width:54px;height:54px;font-size:22px;border-color:var(--primary-soft)}
+.fu-qnum{font-size:12px;color:var(--muted)}
+.fu-q{font-size:19px;font-weight:600;color:var(--text);text-align:center;line-height:1.4}
+.fu-mic{width:68px;height:68px;border-radius:50%;background:var(--primary);
+  border:none;color:#fff;font-size:26px;cursor:pointer;
+  box-shadow:0 8px 24px rgba(91,94,244,.4);
+  display:flex;align-items:center;justify-content:center;font-family:inherit}
+.fu-mic.listening{background:#EF4444;animation:mic-p 1s ease-in-out infinite}
+@keyframes mic-p{0%,100%{box-shadow:0 8px 24px rgba(239,68,68,.4)}
+  50%{box-shadow:0 8px 40px rgba(239,68,68,.7)}}
+.fu-transcript{font-size:13px;color:var(--muted);text-align:center;
+  min-height:18px;font-style:italic}
+.type-link{font-size:12px;color:var(--primary);cursor:pointer;
+  text-decoration:underline;margin-top:-6px}
+
+/* VOICE BAR */
+.vbar{background:#fff;border-top:1px solid rgba(0,0,0,.06);padding:10px 14px;
+  display:flex;align-items:center;gap:9px;flex-shrink:0}
+#vb-av-fu,#vb-av-pr,#vb-av-cmp{width:34px;height:34px;font-size:14px;border-width:2px}
+.vb-waves{display:flex;align-items:center;gap:2px;flex-shrink:0}
+.vb-waves span{display:block;width:3px;background:var(--primary);
+  border-radius:3px;animation:wave .8s ease-in-out infinite}
+.vb-waves span:nth-child(1){height:7px;animation-delay:0s}
+.vb-waves span:nth-child(2){height:14px;animation-delay:.1s}
+.vb-waves span:nth-child(3){height:22px;animation-delay:.2s}
+.vb-waves span:nth-child(4){height:14px;animation-delay:.3s}
+.vb-waves span:nth-child(5){height:8px;animation-delay:.4s}
+@keyframes wave{0%,100%{transform:scaleY(.5);opacity:.4}50%{transform:scaleY(1.2);opacity:1}}
+.vb-mid{flex:1;min-width:0}
+.vb-lbl{font-size:12px;font-weight:600;color:var(--text)}
+.vb-chips{display:flex;gap:5px;margin-top:4px;overflow-x:auto;scrollbar-width:none}
+.vb-chips::-webkit-scrollbar{display:none}
+.vb-chip{background:var(--primary-soft);border:none;border-radius:20px;
+  padding:4px 10px;font-size:11px;font-weight:500;color:var(--primary);
+  cursor:pointer;white-space:nowrap;flex-shrink:0;font-family:inherit}
+.vb-chip:active{background:var(--primary);color:#fff}
+.vb-mic{width:38px;height:38px;border-radius:50%;background:var(--primary);
+  border:none;color:#fff;font-size:17px;cursor:pointer;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-family:inherit}
+.vb-mic.listening{background:#EF4444}
+
+/* ─── PRODUCTS ──────────────────────────────────────────── */
+#screen-products{background:var(--bg)}
+.pr-header{padding:13px 20px 8px;flex-shrink:0}
+.pr-ctx{font-size:12px;color:var(--muted);font-weight:500;margin-bottom:2px}
+.pr-title{font-size:17px;font-weight:700;color:var(--text)}
+
+.cards-scroll{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;
+  gap:13px;padding:0 20px 8px;scrollbar-width:none;flex-shrink:0}
+.cards-scroll::-webkit-scrollbar{display:none}
+
+.pcard{width:268px;border-radius:20px;overflow:hidden;scroll-snap-align:start;
+  flex-shrink:0;background:#fff;box-shadow:0 4px 20px rgba(0,0,0,.09);
+  transition:box-shadow .25s}
+.pcard.active{box-shadow:0 4px 20px rgba(91,94,244,.3),0 0 0 2.5px var(--primary)}
+
+.pcard-img{height:150px;display:flex;align-items:center;justify-content:center;
+  position:relative;overflow:hidden}
+.pcard-emoji{font-size:66px;filter:drop-shadow(0 4px 10px rgba(0,0,0,.3))}
+.pcard-badge{position:absolute;top:10px;left:10px;background:rgba(0,0,0,.65);
+  backdrop-filter:blur(4px);border-radius:20px;padding:4px 10px;
+  font-size:10px;font-weight:600;color:#fff}
+
+.pcard-body{padding:12px 12px 10px}
+.pcard-name{font-size:13px;font-weight:600;color:var(--text);margin-bottom:7px}
+.pcard-specs{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:9px}
+.pcard-spec{background:#F4F4F8;border-radius:6px;padding:2px 7px;
+  font-size:10px;color:var(--muted);font-weight:500}
+.pcard-why-lbl{font-size:9px;font-weight:700;letter-spacing:.8px;
+  text-transform:uppercase;margin-bottom:4px}
+.pcard-why{font-size:12px;font-weight:500;color:var(--text);line-height:1.45;margin-bottom:8px}
+.pcard-more-btn{background:none;border:1px solid #E5E7EB;border-radius:8px;
+  padding:5px 10px;font-size:11px;color:var(--muted);cursor:pointer;
+  display:flex;align-items:center;gap:5px;margin-bottom:8px;
+  width:100%;justify-content:center;font-family:inherit}
+.pcard-det{display:none;background:#F8F9FA;border-radius:8px;
+  padding:9px 11px;font-size:11px;color:var(--muted);margin-bottom:8px;line-height:1.6}
+.pcard-det.open{display:block}
+.pcard-stores{display:flex;gap:6px;margin-top:4px}
+.pcard-store{flex:1;border:2px solid #E5E7EB;border-radius:12px;
+  padding:8px 4px;text-align:center;cursor:pointer;background:#fff;
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  transition:all .15s}
+.pcard-store.best{border-color:var(--primary);background:rgba(91,94,244,.06)}
+.pcard-store:active{transform:scale(.96)}
+.pcard-sname{font-size:11px;font-weight:700}
+.pcard-sprice{font-size:11px;font-weight:700;color:var(--text)}
+.pcard-sbest{font-size:9px;font-weight:700;color:var(--primary);
+  background:rgba(91,94,244,.15);border-radius:6px;padding:2px 6px}
+
+.sdots{display:flex;justify-content:center;gap:5px;padding:2px 0 5px;flex-shrink:0}
+.sdot{width:6px;height:6px;border-radius:50%;background:#D1D5DB;transition:all .2s}
+.sdot.active{background:var(--primary);width:16px;border-radius:3px}
+
+/* ─── COMPARE ───────────────────────────────────────────── */
+#screen-compare{background:var(--bg)}
+.cmp-header{padding:10px 20px 6px;flex-shrink:0}
+.cmp-title{font-size:17px;font-weight:700;color:var(--text);margin-bottom:2px}
+.cmp-sub{font-size:12px;color:var(--muted)}
+
+/* Mini product cards at top */
+.cmp-prod-row{display:flex;gap:7px;padding:4px 16px 8px;flex-shrink:0}
+.cmp-prod-mini{flex:1;background:#fff;border-radius:14px;padding:10px 6px;
+  text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.cmp-prod-emoji{font-size:28px}
+.cmp-prod-name{font-size:9px;font-weight:600;color:var(--text);margin-top:4px;
+  line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;
+  -webkit-box-orient:vertical}
+.cmp-prod-price{font-size:11px;font-weight:700;color:var(--primary);margin-top:3px}
+
+/* Pill-cell rows */
+.cmp-rows{flex:1;overflow-y:auto;padding:0 16px 6px;min-height:0;scrollbar-width:none}
+.cmp-rows::-webkit-scrollbar{display:none}
+.cmp-row{display:flex;align-items:center;padding:4px 0;
+  border-bottom:1px solid rgba(0,0,0,.05)}
+.cmp-row:last-child{border-bottom:none}
+.cmp-spec-lbl{width:62px;font-size:10px;font-weight:600;color:var(--muted);
+  flex-shrink:0;line-height:1.3;padding-right:4px}
+.cmp-cells{display:flex;flex:1;gap:5px}
+.cmp-cell{flex:1;background:#EBEBF5;border-radius:50px;padding:9px 5px;
+  font-size:11px;font-weight:500;text-align:center;color:var(--text);
+  line-height:1.3;border:1.5px solid transparent}
+.cmp-cell.win{background:rgba(91,94,244,.1);border-color:var(--primary);
+  color:var(--primary);font-weight:700}
+.cmp-row.active{background:rgba(91,94,244,.12);border-radius:8px;margin:0 -6px;
+  padding:4px 6px;border-bottom-color:transparent;transition:all .25s}
+.cmp-row.active .cmp-spec-lbl{color:var(--primary)}
+
+/* Verdict strip */
+.cmp-verdict{padding:8px 16px 6px;flex-shrink:0}
+.verdict-card{background:#fff;border-radius:14px;padding:12px 14px;
+  box-shadow:0 2px 10px rgba(0,0,0,.06)}
+.verdict-lbl{font-size:10px;font-weight:700;letter-spacing:.8px;
+  text-transform:uppercase;color:var(--primary);margin-bottom:5px}
+.verdict-txt{font-size:12px;color:var(--text);line-height:1.5;font-weight:500}
+
+/* Product photo in card */
+.pcard-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+
+/* ─── HISTORY ───────────────────────────────────────────── */
+#screen-history{background:var(--bg)}
+.hist-empty{flex:1;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:10px;color:var(--muted)}
+.hist-empty-icon{font-size:40px}
+.hist-list{flex:1;overflow-y:auto;padding:12px 16px;display:flex;
+  flex-direction:column;gap:12px;min-height:0}
+.hist-turn{display:flex;flex-direction:column;gap:4px}
+.hist-you-row{display:flex;justify-content:flex-end}
+.hist-you-bubble{background:var(--primary);color:#fff;padding:10px 14px;
+  border-radius:18px 18px 4px 18px;font-size:13px;line-height:1.4;max-width:75%}
+.hist-aria-row{display:flex;align-items:flex-start;gap:8px}
+.hist-av{width:28px;height:28px;border-radius:50%;background:var(--primary);
+  color:#fff;display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;flex-shrink:0}
+.hist-aria-bubble{background:#fff;color:var(--text);padding:10px 14px;
+  border-radius:18px 18px 18px 4px;font-size:13px;line-height:1.4;
+  box-shadow:0 2px 8px rgba(0,0,0,.06);max-width:75%}
+.hist-prods{display:flex;flex-direction:column;gap:6px;padding-left:36px;margin-top:4px}
+.hist-prod-chip{display:flex;align-items:center;gap:8px;background:#fff;
+  border-radius:12px;padding:8px 12px;box-shadow:0 1px 6px rgba(0,0,0,.06)}
+.hist-prod-em{font-size:22px;flex-shrink:0}
+.hist-prod-nm{font-size:12px;font-weight:600;color:var(--text)}
+.hist-prod-pr{font-size:11px;color:var(--primary);font-weight:600}
+
+/* ─── PURCHASE ──────────────────────────────────────────── */
+#screen-purchase{background:var(--bg)}
+.purchase-photo{height:200px;overflow:hidden;position:relative;background:var(--primary);flex-shrink:0}
+.purchase-photo img{width:100%;height:100%;object-fit:cover}
+.purchase-info{padding:16px 18px 0}
+.purchase-badge{display:inline-block;background:rgba(91,94,244,.1);color:var(--primary);
+  font-size:10px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:8px;
+  letter-spacing:.5px}
+.purchase-name{font-size:17px;font-weight:700;color:var(--text);margin-bottom:4px}
+.purchase-price{font-size:22px;font-weight:800;color:var(--primary);margin-bottom:10px}
+.purchase-why{font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:14px}
+.purchase-stores{display:flex;gap:8px;padding:0 18px}
+.buy-btn{flex:1;background:#fff;border:2px solid #E5E7EB;border-radius:14px;
+  padding:10px 6px;text-align:center;cursor:pointer;display:flex;flex-direction:column;
+  align-items:center;gap:3px;text-decoration:none;transition:all .2s}
+.buy-btn.best{border-color:var(--primary);background:rgba(91,94,244,.06)}
+.buy-btn-store{font-size:11px;font-weight:700}
+.buy-btn-price{font-size:12px;font-weight:600;color:var(--text)}
+.buy-btn-tag{font-size:9px;font-weight:700;color:var(--primary);background:rgba(91,94,244,.15);
+  border-radius:8px;padding:2px 6px}
+.purchase-wa{padding:12px 18px 6px}
+.wa-btn{width:100%;background:#25D366;color:#fff;border:none;border-radius:14px;
+  padding:13px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+
+/* ─── FINAL PURCHASE CARD (in chat feed) ────────────────── */
+.cf-purchase-card{background:#fff;border-radius:20px;overflow:hidden;
+  box-shadow:0 6px 28px rgba(91,94,244,.18);border:2.5px solid var(--primary);width:100%}
+.cf-purchase-photo{height:180px;overflow:hidden;background:var(--primary);position:relative}
+.cf-purchase-photo img{width:100%;height:100%;object-fit:cover}
+.cf-purchase-photo-badge{position:absolute;inset:0;display:flex;align-items:center;
+  justify-content:center;font-size:64px}
+.cf-purchase-body{padding:14px 16px 16px}
+.cf-purchase-badge{display:inline-block;background:rgba(91,94,244,.12);color:var(--primary);
+  font-size:10px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:8px;
+  letter-spacing:.5px}
+.cf-purchase-name{font-size:16px;font-weight:700;color:var(--text);margin-bottom:3px}
+.cf-purchase-price{font-size:22px;font-weight:800;color:var(--primary);margin-bottom:10px}
+.cf-purchase-why{font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:14px}
+.cf-purchase-stores{display:flex;gap:7px;margin-bottom:12px}
+.cf-purchase-wa{width:100%;background:#25D366;color:#fff;border:none;border-radius:14px;
+  padding:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+
+/* TYPE INPUT */
+#type-modal{position:absolute;inset:0;background:rgba(26,26,46,.85);
+  display:none;align-items:flex-end;z-index:50}
+#type-modal.open{display:flex}
+.type-box{background:#fff;width:100%;padding:20px;border-radius:24px 24px 0 0}
+.type-box h3{font-size:15px;font-weight:600;margin-bottom:12px}
+.type-input-row{display:flex;gap:8px}
+.type-input{flex:1;border:1.5px solid #E5E7EB;border-radius:12px;
+  padding:10px 14px;font-size:14px;font-family:inherit;outline:none}
+.type-input:focus{border-color:var(--primary)}
+.type-send{background:var(--primary);color:#fff;border:none;border-radius:12px;
+  padding:10px 18px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+.type-close{display:block;margin-top:12px;text-align:center;
+  font-size:13px;color:var(--muted);cursor:pointer}
+</style>
+</head>
+<body>
+
+<!-- OVERLAY -->
+<div id="overlay">
+  <div style="font-size:60px;margin-bottom:4px">🛍️</div>
+  <h1>Meet Aria</h1>
+  <p>AI voice shopping companion for electronics</p>
+  <button id="btn-start" onclick="startDemo()">▶&nbsp; Start Demo</button>
+  <p style="font-size:11px;color:rgba(255,255,255,.3)">Allow microphone when prompted</p>
+</div>
+
+<div class="phone">
+  <div class="screen-area">
+
+    <!-- HOME -->
+    <div id="screen-home" class="screen active">
+      <div class="top-bar">
+        <span class="brand">HT TECH</span>
+        <button class="lang-btn" id="lbtn-home" onclick="toggleLang()">हिंदी</button>
+      </div>
+      <div class="home-av-wrap">
+        <div class="av" id="home-av">👩‍💼</div>
+        <div class="home-name">I am Neha</div>
+        <div class="home-sub">Your personal shopping assistant</div>
+      </div>
+      <div class="pulse-wrap">
+        <div class="pulse-ring"></div><div class="pulse-ring"></div><div class="pulse-ring"></div>
+        <button class="home-mic" onclick="tapHomeMic()">🎤</button>
+      </div>
+      <div class="home-mic-hint">Tap to speak or pick a category</div>
+      <div class="cats-wrap">
+        <div class="cats-lbl">What are you looking for?</div>
+        <div class="cats-grid">
+          <button class="cat-chip" onclick="selectCat('Smartphone')"><span>📱</span><span>Smartphones</span></button>
+          <button class="cat-chip" onclick="selectCat('Laptop')"><span>💻</span><span>Laptops</span></button>
+          <button class="cat-chip" onclick="selectCat('Refrigerator')"><span>🧊</span><span>Refrigerators</span></button>
+          <button class="cat-chip" onclick="selectCat('Smart TV')"><span>📺</span><span>Smart TVs</span></button>
+          <button class="cat-chip" onclick="selectCat('Washing Machine')"><span>🌀</span><span>Washing Machines</span></button>
+          <button class="cat-chip" onclick="tapHomeMic()"><span>🎤</span><span>Something else</span></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- THINK -->
+    <div id="screen-think" class="screen">
+      <div class="think-body">
+        <div class="think-orb">🛍️</div>
+        <div class="think-txt">Finding your perfect match</div>
+        <div class="dots-row"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+        <div class="think-pills" id="think-pills"></div>
+      </div>
+    </div>
+
+    <!-- CHAT (unified scrollable conversation) -->
+    <div id="screen-chat" class="screen">
+      <div class="top-bar">
+        <button class="back-btn" onclick="goHome()">←</button>
+        <span class="brand">HT TECH</span>
+        <div class="av" style="width:28px;height:28px;font-size:14px">🤖</div>
+      </div>
+      <div id="chat-feed" class="chat-feed"></div>
+      <div id="chat-interim" class="chat-interim"></div>
+      <div class="chat-bottom">
+        <div class="chat-chips-row" id="chat-chips"></div>
+        <div class="chat-vbar">
+          <div class="chat-vbar-lbl" id="chat-vlbl" data-vblbl>Ask Aria anything</div>
+          <button class="chat-vbar-mic" id="chat-mic" onclick="tapMic()">🎤</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- FOLLOW-UP -->
+    <div id="screen-followup" class="screen">
+      <div class="top-bar">
+        <span class="brand">HT TECH</span>
+        <button class="lang-btn" id="lbtn-fu" onclick="toggleLang()">हिंदी</button>
+      </div>
+      <div class="ctx-strip">🔍 <span id="fu-ctx">Finding the perfect product for you</span></div>
+      <div class="prev-row" id="fu-prev"></div>
+      <div class="fu-center">
+        <div class="av" id="fu-av">👩‍💼</div>
+        <div class="fu-qnum" id="fu-qnum">Question 1 of 3</div>
+        <div class="fu-q" id="fu-q">What are you looking for today?</div>
+        <button class="fu-mic" id="fu-mic" onclick="tapMic()">🎤</button>
+        <div class="fu-transcript" id="fu-tx">Tap mic and speak your answer</div>
+        <span class="type-link" onclick="openType()">Or type instead →</span>
+      </div>
+      <div class="vbar">
+        <div class="av" id="vb-av-fu">👩‍💼</div>
+        <div class="vb-waves"><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="vb-mid">
+          <div class="vb-lbl" data-vblbl>Ask Aria anything</div>
+          <div class="vb-chips" id="fu-chips"></div>
+        </div>
+        <button class="vb-mic" id="vbm-fu" onclick="tapMic()">🎤</button>
+      </div>
+      <div id="type-modal">
+        <div class="type-box">
+          <h3>Type your answer</h3>
+          <div class="type-input-row">
+            <input class="type-input" id="type-inp" placeholder="e.g. Samsung under ₹30K" />
+            <button class="type-send" onclick="sendType()">Send</button>
+          </div>
+          <span class="type-close" onclick="closeType()">Cancel</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRODUCTS -->
+    <div id="screen-products" class="screen">
+      <div class="top-bar">
+        <button class="back-btn" onclick="goHome()">←</button>
+        <span class="brand">HT TECH</span>
+        <button class="lang-btn" id="lbtn-pr" onclick="toggleLang()">हिंदी</button>
+      </div>
+      <div class="pr-header">
+        <div class="pr-ctx" id="pr-ctx">My recommendations for you</div>
+        <div class="pr-title">Aria's Top Picks</div>
+      </div>
+      <div class="cards-scroll" id="cards-scroll"></div>
+      <div class="sdots" id="sdots"></div>
+      <div style="flex:1;min-height:0"></div>
+      <div class="vbar">
+        <div class="av" id="vb-av-pr">👩‍💼</div>
+        <div class="vb-waves"><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="vb-mid">
+          <div class="vb-lbl" data-vblbl>Ask Aria anything</div>
+          <div class="vb-chips" id="pr-chips">
+            <button class="vb-chip" onclick="chip('Compare all 3')">Compare all 3</button>
+            <button class="vb-chip" onclick="chip('See more options')">More options</button>
+            <button class="vb-chip" onclick="chip('Send details on WhatsApp')">Send to WhatsApp</button>
+            <button class="vb-chip" onclick="chip('Help me decide which one to buy')">Help me decide</button>
+          </div>
+        </div>
+        <button class="vb-mic" id="vbm-pr" onclick="tapMic()">🎤</button>
+      </div>
+    </div>
+
+    <!-- COMPARE -->
+    <div id="screen-compare" class="screen">
+      <div class="top-bar">
+        <button class="back-btn" onclick="showScreen('products')">←</button>
+        <span class="brand">HT TECH</span>
+        <span style="font-size:12px;color:var(--muted)">Compare</span>
+      </div>
+      <div class="cmp-header">
+        <div class="cmp-title">Side-by-Side</div>
+        <div class="cmp-sub" id="cmp-sub">Aria's full analysis</div>
+      </div>
+      <div class="cmp-prod-row" id="cmp-prod-row"></div>
+      <div class="cmp-rows" id="cmp-rows"></div>
+      <div class="cmp-verdict" id="cmp-verdict"></div>
+      <div class="vbar">
+        <div class="av" id="vb-av-cmp">👩‍💼</div>
+        <div class="vb-waves"><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="vb-mid">
+          <div class="vb-lbl" data-vblbl>Ask Aria anything</div>
+          <div class="vb-chips" id="cmp-chips">
+            <button class="vb-chip" onclick="chip('Which one should I buy?')">Which to buy?</button>
+            <button class="vb-chip" onclick="chip('Best value for money?')">Best value</button>
+            <button class="vb-chip" onclick="chip('Send details on WhatsApp')">Send to WhatsApp</button>
+          </div>
+        </div>
+        <button class="vb-mic" id="vbm-cmp" onclick="tapMic()">🎤</button>
+      </div>
+    </div>
+
+    <!-- HISTORY -->
+    <div id="screen-history" class="screen">
+      <div class="top-bar">
+        <button class="back-btn" onclick="navTo('home')">←</button>
+        <span class="brand">HT TECH</span>
+        <span style="font-size:13px;font-weight:600;color:var(--text)">Recent Chats</span>
+      </div>
+      <div id="hist-body" class="hist-list"></div>
+    </div>
+
+    <!-- PURCHASE -->
+    <div id="screen-purchase" class="screen">
+      <div class="top-bar">
+        <button class="back-btn" onclick="navBack()">←</button>
+        <span class="brand">HT TECH</span>
+        <span style="font-size:13px;font-weight:600;color:var(--text)">Buy Now</span>
+      </div>
+      <div style="flex:1;overflow-y:auto">
+        <div class="purchase-photo"><img id="purchase-img" src="" alt=""></div>
+        <div class="purchase-info">
+          <div class="purchase-badge" id="purchase-badge"></div>
+          <div class="purchase-name" id="purchase-name"></div>
+          <div class="purchase-price" id="purchase-price"></div>
+          <div class="purchase-why" id="purchase-why"></div>
+        </div>
+        <div class="purchase-stores" id="purchase-stores"></div>
+        <div class="purchase-wa">
+          <button class="wa-btn" onclick="chip('Send to WhatsApp')">📱 Send to WhatsApp</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- .screen-area -->
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" id="nav-home" onclick="navTo('home')">
+      <span class="nav-icon">🏠</span>
+      <span class="nav-lbl">Home</span>
+    </button>
+    <button class="nav-btn" id="nav-history" onclick="navTo('history')">
+      <span class="nav-icon">🕐</span>
+      <span class="nav-lbl">History</span>
+    </button>
+  </nav>
+</div>
+
+<script>
+// ─── SYSTEM PROMPT ────────────────────────────────────────
+const SYS = `You are Aria, a warm Indian female voice shopping companion for HT Tech.
+
+CRITICAL: Always respond with ONLY valid JSON — zero text outside the JSON object.
+
+USER: Suhail | Prev session: checked mobile phones ₹20K–₹40K
+
+RULES:
+- tts_text: SHORT (2-3 sentences max), natural spoken English, will be read aloud
+- NEVER use the user's name in tts_text — it may be mispronounced. Use "you" instead.
+- Ask ONE question per turn, max 3 before first recommendation
+- After getting category + use_case + budget → return show_products
+- Generate accurate Indian market products with realistic current ₹ prices
+- Mention price alerts in audio only when relevant (e.g. "I'll keep an eye on price drops for you!")
+- Match user language (en/hi). If user writes Hindi, use Hindi in tts_text.
+
+ENGAGEMENT RULES (CRITICAL — follow these strictly):
+- Every "converse" tts_text MUST end with a specific question to keep the dialogue going
+- If user says confused / not sure / can't decide / still thinking:
+  → return "converse" and ask WHAT specifically confuses them
+  → e.g. "What's making it tricky — is it the price, the specs, or maybe the brand?"
+  → NEVER show products again without understanding the confusion first
+- If user asks for more options / different products / something else:
+  → return "show_products" with COMPLETELY DIFFERENT brands and models
+  → Check conversation history and do NOT repeat any previously shown product name
+- Never be passive. Always push the conversation forward with a targeted question.
+- Goal: guide the user to a final purchase decision through focused dialogue.
+
+SALES AGENT PROGRESSION (CRITICAL):
+- "post_show_question" must be dynamic and NEVER repeat across turns. Base it on session depth:
+  • 1st product set shown → ask which feature matters most, or narrow a spec: "Which of these stands out — or is there a specific feature you're comparing?"
+  • 2nd product set → shift to urgency/timeline: "Are you looking to buy this week, or still in explore mode?"
+  • 3rd+ → direct purchase push: "Want me to check if any of these have a price drop right now?" / "Should I pull up the best deal for you?"
+- chips after products MUST reflect the post_show_question — if asking about urgency, chips = ["Buying this week","Next month","Just browsing"]
+- NEVER use "So, which one caught your eye?" — it is banned
+- chips in follow_up MUST be specific to the question topic (washing machine load → ["6 kg","8 kg","10 kg+"], TV size → ["32 inch","43 inch","55 inch+"])
+
+CATEGORIES & EMOJI:
+- Smartphones 📱: Samsung, OnePlus, Realme, Vivo, iQOO, Nothing, Apple
+- Laptops 💻: Dell, HP, Lenovo, ASUS, Acer, Apple
+- Refrigerators 🧊: Samsung, LG, Whirlpool, Haier, Godrej
+- Smart TVs 📺: Samsung, LG, Sony, TCL, Hisense
+- Washing Machines 🌀: Samsung, LG, IFB, Whirlpool, Bosch
+
+card_theme values: "navy" | "forest" | "amber" (navy=1st, forest=2nd, amber=3rd)
+
+RETURN EXACTLY ONE JSON ACTION:
+
+follow_up:
+{"action":"follow_up","question_num":1,"context_strip":"Finding you the perfect smartphone","question":"What will you mainly use it for?","tts_text":"Great choice! What will you mainly use it for — photography, gaming, or everyday use?","chips":["Photography","Gaming","Daily use","Business work"],"prev_answers":[]}
+NOTE: chips MUST match the category and question. For washing machines ask about load type, for TVs ask about screen size, etc.
+
+show_products (ALWAYS exactly 3 products):
+{"action":"show_products","context_strip":"Best phones under 30K for photography","tts_text":"Based on what you shared, here are my top 3 picks. Let me walk you through each one!","post_show_question":"All three have great cameras — but which matters more to you right now: camera quality, battery, or the price?","products":[{"name":"Samsung Galaxy A55 5G","price":27999,"badge":"Aria's top pick for you","card_theme":"navy","card_emoji":"📱","image_keywords":"samsung galaxy a55 smartphone official","specs":["8GB RAM","256GB","6.6in AMOLED","5000mAh"],"why":"The Samsung A55 is a great choice — excellent 50MP camera with OIS stabilization, vibrant display, and 4 years of software updates for long-term value.","more_details":"Exynos 1480, 8GB RAM, 50MP+12MP+5MP cameras, 25W fast charging, IP67 rated","stores":{"amazon":27999,"flipkart":28499,"croma":28999},"best_store":"amazon"},{"name":"OnePlus Nord CE4","price":24999,"badge":"Best battery life","card_theme":"forest","card_emoji":"📱","image_keywords":"oneplus nord smartphone official","specs":["8GB RAM","256GB","6.7in AMOLED","5500mAh"],"why":"The Nord CE4 charges from zero to full in just 28 minutes with 100W SUPERVOOC — perfect for people always on the move.","more_details":"Snapdragon 7 Gen 3, 8GB RAM, 50MP main camera, 100W SUPERVOOC, OxygenOS","stores":{"amazon":24999,"flipkart":24499,"croma":25499},"best_store":"flipkart"},{"name":"Realme 13 Pro+","price":23999,"badge":"Best value choice","card_theme":"amber","card_emoji":"📱","image_keywords":"realme smartphone official product","specs":["12GB RAM","256GB","6.7in AMOLED","5000mAh"],"why":"Realme 13 Pro+ gives you 12GB RAM and a Sony IMX890 sensor at the most competitive price here — outstanding value if camera quality matters most.","more_details":"Snapdragon 7s Gen 3, 12GB RAM, 50MP OIS Sony IMX890, 8MP portrait lens, 67W fast charging","stores":{"amazon":23999,"flipkart":23499,"croma":24499},"best_store":"flipkart"}]}
+
+compare:
+{"action":"compare","tts_text":"Samsung leads on camera, OnePlus wins on charging speed, and Realme offers the best overall value.","product_names":["Samsung A55","Nord CE4","Realme 13 Pro+"],"specs":[{"label":"Price","values":["27,999","24,999","23,999"],"winner":2,"spoken":"Realme wins on price at just 23,999 rupees."},{"label":"Camera","values":["50MP OIS","50MP","50MP OIS Sony"],"winner":2,"spoken":"Realme has the best camera with Sony IMX890 sensor."},{"label":"Battery","values":["5000mAh","5500mAh","5000mAh"],"winner":1,"spoken":"OnePlus leads with 5500 milliamp battery."},{"label":"Charging","values":["25W","100W","67W"],"winner":1,"spoken":"OnePlus wins charging — zero to full in 28 minutes."},{"label":"RAM","values":["8GB","8GB","12GB"],"winner":2,"spoken":"Realme tops RAM with 12 gigabytes."},{"label":"OS Updates","values":["4 years","3 years","2 years"],"winner":0,"spoken":"Samsung wins on long-term support with 4 years of updates."}]}
+NOTE: each spec MUST include a "spoken" field — one short sentence (under 12 words) calling out the winner.
+
+converse:
+{"action":"converse","tts_text":"Great question! The Samsung actually has IP67 water resistance which the others don't — very handy for everyday use.","chips":["Compare all 3","Which has best camera?","Tell me about battery","Set price alert"]}
+
+show_purchase (when user says "how to buy", "buy now", "I'll take it", "purchase this"):
+{"action":"show_purchase","product_name":"Samsung Galaxy A55 5G","price":27999,"badge":"Aria's Top Pick","card_emoji":"📱","image_keywords":"samsung galaxy a55 smartphone official","tts_text":"Great choice! The Samsung Galaxy A55 is at its best price on Amazon right now. Shall I send the link to your WhatsApp?","why":"Perfect for your photography needs — 50MP OIS camera and 4 years of software support.","more_details":"Exynos 1480, 8GB RAM, 50MP+12MP+5MP cameras, 25W fast charging, IP67 rated","stores":{"amazon":27999,"flipkart":28499,"croma":28999},"best_store":"amazon"}`;
+
+// ─── STATE ────────────────────────────────────────────────
+const S = {
+  lang:'en', msgs:[], products:[], contextStrip:'',
+  prevAnswers:[], followupNum:0, screen:'home',
+  isSpeaking:false, isListening:false, prevScreen:'home',
+  isProcessing:false,
+  chatMode:false  // true only after first products are shown
+};
+
+const delay = ms => new Promise(r => setTimeout(r, ms));
+
+// ─── AVATAR LOADER ────────────────────────────────────────
+// Try to load aria-avatar.jpg; if found, inject into all avatar divs
+(function loadAvatar(){
+  const img = new Image();
+  img.onload = () => {
+    document.querySelectorAll('.av').forEach(el => {
+      const i = document.createElement('img');
+      i.src = 'aria-avatar.jpg';
+      i.alt = 'Aria';
+      el.textContent = '';
+      el.appendChild(i);
+    });
+  };
+  img.onerror = () => {}; // keep emoji fallback
+  img.src = 'aria-v2.jpg';
+})();
+
+// ─── TTS QUEUE ────────────────────────────────────────────
+let ttsQ=[], ttsBusy=false, ttsIdlers=[];
+
+function speak(txt){
+  return new Promise(r=>{ttsQ.push({txt,r});if(!ttsBusy)_tts()});
+}
+
+// Resolves when all queued speech has finished — used after early-TTS to re-sync
+function ttsFlush(){
+  if(!ttsBusy&&!ttsQ.length)return Promise.resolve();
+  return new Promise(r=>ttsIdlers.push(r));
+}
+
+async function _tts(){
+  if(!ttsQ.length){ttsBusy=false;ttsIdlers.forEach(r=>r());ttsIdlers=[];return}
+  ttsBusy=true;
+  const{txt,r}=ttsQ.shift();
+  try{
+    const res=await fetch('/api/tts',{method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({text:txt,lang:S.lang})});
+    if(!res.ok)throw new Error('TTS '+res.status);
+    const blob=await res.blob(); // binary — faster than base64 JSON
+    const url=URL.createObjectURL(blob);
+    const au=new Audio(url);
+    S.isSpeaking=true;syncMicUI();
+    au.onended=()=>{S.isSpeaking=false;URL.revokeObjectURL(url);r();_tts()};
+    au.onerror=()=>{S.isSpeaking=false;URL.revokeObjectURL(url);r();_tts()};
+    await au.play();
+  }catch(e){
+    console.error('TTS',e);S.isSpeaking=false;r();_tts();
+  }
+}
+
+// Pre-fetch TTS audio without blocking — returns a blob URL promise
+async function prefetchTTS(text){
+  try{
+    const res=await fetch('/api/tts',{method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({text,lang:S.lang})});
+    if(!res.ok)return null;
+    return URL.createObjectURL(await res.blob());
+  }catch(e){return null;}
+}
+
+// Play a pre-fetched blob URL (sequential, manages isSpeaking flag)
+function playBlobUrl(url){
+  if(!url)return Promise.resolve();
+  return new Promise(r=>{
+    const au=new Audio(url);
+    S.isSpeaking=true;syncMicUI();
+    au.onended=()=>{S.isSpeaking=false;URL.revokeObjectURL(url);syncMicUI();r()};
+    au.onerror=()=>{S.isSpeaking=false;URL.revokeObjectURL(url);syncMicUI();r()};
+    au.play().catch(()=>r());
+  });
+}
+
+// ─── STT ─────────────────────────────────────────────────
+let rec=null;
+
+function initSTT(){
+  const R=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!R)return;
+  rec=new R();rec.continuous=false;rec.interimResults=true;
+  rec.onresult=e=>{
+    const t=Array.from(e.results).map(r=>r[0].transcript).join('');
+    const ci=$('chat-interim');if(ci)ci.textContent=t?`"${t}"…`:'';
+    if(e.results[e.results.length-1].isFinal){stopListen();if(ci)ci.textContent='';handleInput(t)}
+  };
+  rec.onerror=e=>{
+    const ci=$('chat-interim');if(ci)ci.textContent='';
+    setListen(false);
+  };
+  rec.onend=()=>setListen(false);
+}
+
+function startListen(){
+  if(S.isProcessing||S.isSpeaking)return;
+  if(!rec)initSTT();if(!rec)return;
+  rec.lang=S.lang==='hi'?'hi-IN':'en-IN';
+  try{
+    rec.start();setListen(true);
+    $('fu-tx').textContent='Listening...';
+  }catch(e){
+    // Recognition may still be running — stop it and retry once
+    console.warn('STT restart:',e.message);
+    try{rec.stop()}catch(e2){}
+    setTimeout(()=>{
+      try{rec.start();setListen(true);}catch(e3){console.error('STT failed:',e3)}
+    },300);
+  }
+}
+function stopListen(){try{rec&&rec.stop()}catch(e){}setListen(false)}
+function setListen(v){S.isListening=v;syncMicUI()}
+function syncMicUI(){
+  const l=S.isListening;
+  ['fu-mic','vbm-fu','vbm-pr','vbm-cmp','chat-mic'].forEach(id=>{
+    const b=$(id);if(!b)return;
+    b.textContent=l?'⏹':'🎤';b.classList.toggle('listening',l);
+  });
+  document.querySelectorAll('[data-vblbl]').forEach(el=>{
+    el.textContent=l?'🎤 Listening…':'Ask Aria anything';
+    el.style.color=l?'#EF4444':'';
+  });
+  // Also update chat voice bar label
+  const cl=$('chat-vlbl');
+  if(cl){cl.textContent=l?'🎤 Listening…':'Ask Aria anything';cl.style.color=l?'#EF4444':'';}
+}
+
+// ─── SCREENS ─────────────────────────────────────────────
+function showScreen(n){
+  if(n!=='think')S.prevScreen=S.screen;
+  S.screen=n;
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const t=$('screen-'+n);if(t)t.classList.add('active');
+}
+function $(id){return document.getElementById(id)}
+
+function navTo(n){
+  // Update bottom nav active state
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  const nb=$('nav-'+n);if(nb)nb.classList.add('active');
+
+  if(n==='history'){showHistory();return}
+  if(n==='home'){goHome();return}
+  showScreen(n);
+}
+
+// ─── OPENAI ───────────────────────────────────────────────
+async function callAria(userTxt){
+  if(S.isProcessing)return;
+  S.isProcessing=true;
+  if(S.chatMode)appendToChatFeed({type:'user',text:userTxt}); // only in chat mode
+  showScreen('think');stopListen();
+  S.msgs.push({role:'user',content:userTxt});
+  $('think-pills').innerHTML=S.prevAnswers.map(a=>`<div class="think-pill">${a}</div>`).join('');
+  try{
+    // Inject language reminder just after system prompt so AI never forgets
+    const langMsg=S.lang==='hi'
+      ?{role:'system',content:'ACTIVE LANGUAGE: Hindi. You MUST write tts_text in Hindi (Devanagari script). No English words in tts_text.'}
+      :null;
+    const sendMsgs=langMsg?[S.msgs[0],langMsg,...S.msgs.slice(1)]:S.msgs;
+    const res=await fetch('/api/chat',{method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({messages:sendMsgs})});
+    if(!res.ok)throw new Error('HTTP '+res.status);
+
+    // Stream tokens — speak tts_text the moment it's complete, before full JSON arrives
+    const reader=res.body.getReader(),dec=new TextDecoder();
+    let lineBuf='',fullJson='',earlySpoken=false,detectedAction='';
+
+    while(true){
+      const{done,value}=await reader.read();
+      if(done)break;
+      lineBuf+=dec.decode(value,{stream:true});
+      const lines=lineBuf.split('\n');
+      lineBuf=lines.pop();
+      for(const line of lines){
+        if(!line.startsWith('data: '))continue;
+        const raw=line.slice(6).trim();
+        if(raw==='[DONE]')continue;
+        try{
+          const tok=JSON.parse(raw);
+          if(tok.error)throw new Error(JSON.stringify(tok.error));
+          if(typeof tok==='string')fullJson+=tok;
+        }catch(e){if(e.message.startsWith('{'))throw e}
+      }
+      // Detect action field first (comes before tts_text in output)
+      if(!detectedAction){const am=fullJson.match(/"action"\s*:\s*"([^"]+)"/);if(am)detectedAction=am[1];}
+      // Start TTS as soon as tts_text is complete — except compare (verdict plays last)
+      if(!earlySpoken&&detectedAction&&detectedAction!=='compare'){
+        const m=fullJson.match(/"tts_text"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+        if(m&&m[1]){
+          earlySpoken=true;
+          speak(m[1].replace(/\\n/g,' ').replace(/\\"/g,'"').replace(/\\'/g,"'"));
+        }
+      }
+    }
+
+    let parsed;
+    try{parsed=JSON.parse(fullJson)}
+    catch(e){
+      const m=fullJson.match(/\{[\s\S]*\}/);
+      parsed=m?JSON.parse(m[0]):{action:'converse',
+        tts_text:'I had a bit of trouble understanding. Could you try again?',chips:[]}
+    }
+    S.msgs.push({role:'assistant',content:fullJson});
+    await routeResponse(parsed,earlySpoken);
+  }catch(e){
+    console.error('AI',e);
+    S.isProcessing=false;
+    const errMsg="Oops, something went wrong. Please try again!";
+    if(S.chatMode){appendToChatFeed({type:'aria',text:errMsg});showScreen('chat');}
+    else{showScreen('home');}
+    await speak(errMsg);startListen();
+  }
+}
+
+async function routeResponse(d, earlySpoken=false){
+  switch(d.action){
+
+    case'follow_up':{
+      S.followupNum=d.question_num||1;
+      S.contextStrip=d.context_strip||S.contextStrip;
+      if(d.prev_answers&&d.prev_answers.length)S.prevAnswers=d.prev_answers;
+      const chips=d.chips&&d.chips.length?d.chips:['Yes','No','Not sure'];
+      if(S.chatMode){
+        // Already shown products before — append to chat timeline
+        appendToChatFeed({type:'aria',text:d.tts_text||d.question||''});
+        $('chat-chips').innerHTML=chips.map(c=>`<button class="vb-chip" onclick="chip('${c}')">${c}</button>`).join('');
+        showScreen('chat');
+      }else{
+        // Pre-products — use the classic blue follow-up screen
+        $('fu-ctx').textContent=S.contextStrip;
+        $('fu-qnum').textContent=`Question ${S.followupNum} of 3`;
+        $('fu-q').textContent=d.question||d.tts_text||'Tell me more about what you need.';
+        $('fu-tx').textContent='Tap mic and speak your answer';
+        $('fu-prev').innerHTML=S.prevAnswers.map(a=>`<div class="prev-pill">✓ ${a}</div>`).join('');
+        $('fu-chips').innerHTML=chips.map(c=>`<button class="vb-chip" onclick="chip('${c}')">${c}</button>`).join('');
+        showScreen('followup');
+      }
+      S.isProcessing=false;
+      if(!earlySpoken)await speak(d.tts_text); else await ttsFlush();
+      startListen();
+      break;
+    }
+
+    case'show_products':{
+      S.chatMode=true; // first products → switch to chat timeline permanently
+      S.products=d.products||[];
+      S.contextStrip=d.context_strip||'';
+
+      // Pre-fetch card audio in parallel while intro plays — name spoken first, then why
+      const cardUrlPending=S.products.map(p=>prefetchTTS(`${p.name}. ${p.why}`));
+
+      // Build cards and add to chat feed
+      const cardEl=buildCards(S.products);
+      appendToChatFeed({type:'el',label:S.contextStrip,el:cardEl});
+      showScreen('chat');
+      S.isProcessing=false;
+
+      // 1. Play intro (earlySpoken = already started)
+      if(!earlySpoken)await speak(d.tts_text); else await ttsFlush();
+
+      // 2. Await pre-fetched card audio (should be ready by now)
+      const cardUrls=await Promise.all(cardUrlPending);
+
+      // 3. Walk through each card with pre-fetched audio (no wait!)
+      for(let i=0;i<S.products.length;i++){
+        await delay(250);
+        hlCard(i);
+        await playBlobUrl(cardUrls[i]);
+        await delay(300);
+      }
+      // Collapse current card set after narration (don't touch old sets in feed)
+      const curSc=$('cards-scroll');
+      if(curSc){
+        curSc.querySelectorAll('.pcard').forEach(c=>c.classList.remove('active'));
+        curSc.querySelectorAll('.pcard-det').forEach(dt=>{
+          dt.classList.remove('open');
+          const b=dt.previousElementSibling;if(b)b.textContent='⚙ More details ▾';
+        });
+      }
+      $('sdots')?.querySelectorAll('.sdot').forEach(d=>d.classList.remove('active'));
+
+      // 4. AI-generated follow-up (progressive sales narrowing)
+      const followupQ=d.post_show_question||(S.lang==='hi'
+        ?'इनमें से कौन सा option आपको सबसे ज़्यादा पसंद आया?'
+        :'Which of these caught your attention — or is there something specific you want me to dig into?');
+      appendToChatFeed({type:'aria',text:followupQ});
+      await speak(followupQ);
+
+      $('chat-chips').innerHTML=['Compare all 3','See more options','Send to WhatsApp','Help me decide']
+        .map(c=>`<button class="vb-chip" onclick="chip('${c}')">${c}</button>`).join('');
+      startListen();
+      break;
+    }
+
+    case'compare':{
+      buildCompare(d);
+      showScreen('compare');
+      S.isProcessing=false;
+
+      // Pre-fetch all spec row + verdict audio in parallel
+      const specTexts=(d.specs||[]).map(spec=>spec.spoken||(spec.winner>=0&&d.product_names?.[spec.winner]
+        ?`${spec.label} — ${d.product_names[spec.winner]} leads here.`
+        :`${spec.label}: ${(spec.values||[]).join(', ')}.`));
+      const [verdictUrl,...specUrls]=await Promise.all([prefetchTTS(d.tts_text),...specTexts.map(prefetchTTS)]);
+
+      // Walk rows — audio already pre-fetched
+      for(let i=0;i<specUrls.length;i++){
+        await delay(200);
+        hlCompareRow(i);
+        await playBlobUrl(specUrls[i]);
+        await delay(100);
+      }
+      hlCompareRow(-1);
+      await delay(350);
+      await playBlobUrl(verdictUrl); // verdict
+      await delay(400);
+      const cmpFollowup = S.lang==='hi'
+        ? 'तो इनमें से कौन सा लेना चाहेंगे? मैं आपको final decision में help कर सकती हूं, या WhatsApp पर details भेज सकती हूं!'
+        : 'So which one feels right for you? I can help you make the final call, check for any active price drops, or send all the details straight to your WhatsApp!';
+      await speak(cmpFollowup);
+      $('cmp-chips').innerHTML=[
+        'Help me decide','Check price drops','Send to WhatsApp','See more options'
+      ].map(c=>`<button class="vb-chip" onclick="chip('${c}')">${c}</button>`).join('');
+      startListen();
+      break;
+    }
+
+    case'show_purchase':{
+      S.isProcessing=false;
+      S.chatMode=true; // ensure chat mode is on
+      const purchaseEl=buildPurchaseCard(d);
+      appendToChatFeed({type:'aria',text:d.tts_text||'Here\'s your final pick!'});
+      appendToChatFeed({type:'el',label:'🎉 Your Final Pick',el:purchaseEl});
+      showScreen('chat');
+      $('chat-chips').innerHTML=['Compare prices','Send to WhatsApp','Show more options']
+        .map(c=>`<button class="vb-chip" onclick="chip('${c}')">${c}</button>`).join('');
+      if(!earlySpoken)await speak(d.tts_text); else await ttsFlush();
+      startListen();
+      break;
+    }
+
+    default:{ // converse
+      S.isProcessing=false;
+      if(S.chatMode){
+        if(d.tts_text)appendToChatFeed({type:'aria',text:d.tts_text});
+        if(!earlySpoken){if(d.tts_text)await speak(d.tts_text);}else await ttsFlush();
+        if(d.chips&&d.chips.length)
+          $('chat-chips').innerHTML=d.chips.map(c=>`<button class="vb-chip" onclick="chip('${c}')">${c}</button>`).join('');
+        const stay=S.prevScreen==='compare'?'compare':'chat';
+        showScreen(stay);
+      }else{
+        if(!earlySpoken){if(d.tts_text)await speak(d.tts_text);}else await ttsFlush();
+        if(d.chips&&d.chips.length)
+          $('fu-chips').innerHTML=d.chips.map(c=>`<button class="vb-chip" onclick="chip('${c}')">${c}</button>`).join('');
+        showScreen('followup');
+      }
+      startListen();
+    }
+  }
+}
+
+// ─── PRODUCT CARDS ────────────────────────────────────────
+const THEMES={
+  navy:{bg:'linear-gradient(160deg,#0D1B3E,#1a2f6e)',ac:'#5B5EF4'},
+  forest:{bg:'linear-gradient(160deg,#0D3B2E,#0f5240)',ac:'#0D9488'},
+  amber:{bg:'linear-gradient(160deg,#3B1F00,#5c3300)',ac:'#D97706'},
+};
+const SCOLORS={amazon:'#F59E0B',flipkart:'#2874F0',croma:'#1B6E3A'};
+const SNAMES={amazon:'Amazon',flipkart:'Flipkart',croma:'Croma'};
+
+function nameHash(s){let h=5381;for(let i=0;i<s.length;i++)h=(h*33+s.charCodeAt(i))&0xFFFFFF;return Math.abs(h);}
+
+// ─── CHAT FEED ────────────────────────────────────────────
+function appendToChatFeed(item){
+  const feed=$('chat-feed');if(!feed)return;
+  const el=document.createElement('div');
+  if(item.type==='aria'){
+    el.className='cf-aria-row';
+    el.innerHTML=`<div class="cf-aria-av">A</div><div class="cf-aria-bubble">${item.text}</div>`;
+  }else if(item.type==='user'){
+    el.className='cf-user-row';
+    el.innerHTML=`<div class="cf-user-bubble">${item.text}</div>`;
+  }else if(item.type==='el'){
+    el.className='cf-products-wrap';
+    if(item.label){const l=document.createElement('div');l.className='cf-ctx-strip';l.textContent='🔍 '+item.label;el.appendChild(l);}
+    el.appendChild(item.el);
+  }
+  feed.appendChild(el);
+  setTimeout(()=>feed.scrollTop=feed.scrollHeight,60);
+}
+
+// ─── PRODUCT IMAGES — curated Unsplash pools per category ───
+const PRODUCT_PHOTOS={
+  '📱':['photo-1511707171634-5f897ff02aa9','photo-1592750475338-74b7b21085ab',
+        'photo-1598327106026-eeb0f57efa12','photo-1601784551446-20c9e07cdbdb',
+        'photo-1565536421961-1e8d809dd2e1','photo-1580910051074-3eb694886505'],
+  '💻':['photo-1496181133206-80ce9b88a853','photo-1525547719571-a2d4ac8945e2',
+        'photo-1484788984921-03950022c9ef','photo-1517336714731-489689fd1ca8',
+        'photo-1593642702821-c8da6771f0c6','photo-1541807084-5c52b6b3adef'],
+  '📺':['photo-1593359677879-a4bb92f4834c','photo-1461151304267-38535e780c79',
+        'photo-1567690187548-f07b1d7bf51d','photo-1571415060716-baff7a298f69'],
+  '🧊':['photo-1571175443880-49e1d25b2bc5','photo-1584568694244-14fbdf83bd30',
+        'photo-1615840287214-7ff58936c4cf','photo-1536353284924-9220c464e827'],
+  '🌀':['photo-1626806787461-102c1bfaaea1','photo-1558618666-fcd25c85cd64',
+        'photo-1582735689369-4fe19494a5d0','photo-1604335399105-a0c585fd81a1'],
+};
+const CATEGORY_FALLBACK={
+  '📱':'smartphone,mobile,phone',
+  '💻':'laptop,computer,notebook',
+  '📺':'television,smart-tv,screen',
+  '🧊':'refrigerator,fridge,kitchen',
+  '🌀':'washing-machine,laundry,appliance',
+};
+function productImgUrl(emoji,name,w,h){
+  const pool=PRODUCT_PHOTOS[emoji];
+  if(pool&&pool.length){
+    const id=pool[nameHash(name)%pool.length];
+    return `https://images.unsplash.com/${id}?w=${w}&h=${h}&fit=crop&auto=format&q=80`;
+  }
+  const kw=CATEGORY_FALLBACK[emoji]||'electronics';
+  return `https://source.unsplash.com/${w}x${h}/?${kw}`;
+}
+
+// Build a product set element for chat feed — replaces old buildCards
+function buildCards(products){
+  // Strip IDs from any prior card set so new cards own the IDs
+  document.querySelectorAll('.pcard[id]').forEach(c=>{
+    c.querySelector('.pcard-det[id]')?.removeAttribute('id');
+    c.removeAttribute('id');
+  });
+  document.getElementById('cards-scroll')?.removeAttribute('id');
+  document.getElementById('sdots')?.removeAttribute('id');
+  document.querySelectorAll('.sdot[id]').forEach(d=>d.removeAttribute('id'));
+
+  const scroll=document.createElement('div');
+  scroll.className='cf-cards-scroll';scroll.id='cards-scroll';
+  const dots=document.createElement('div');
+  dots.className='cf-sdots';dots.id='sdots';
+
+  products.forEach((p,i)=>{
+    const th=THEMES[p.card_theme]||THEMES.navy;
+    const stores=Object.entries(p.stores||{}).map(([s,pr])=>`
+      <div class="pcard-store${s===p.best_store?' best':''}"
+           onclick="chip('Buy on ${SNAMES[s]||s}')">
+        <div class="pcard-sname" style="color:${SCOLORS[s]||'#333'}">${SNAMES[s]||s}</div>
+        <div class="pcard-sprice">₹${Number(pr).toLocaleString('en-IN')}</div>
+        ${s===p.best_store?`<div class="pcard-sbest">★ Best</div>`:'<div style="font-size:9px;color:#9CA3AF">Shop →</div>'}
+      </div>`).join('');
+    const imgSrc=productImgUrl(p.card_emoji,p.name,300,200);
+    const card=document.createElement('div');
+    card.className='pcard';card.id='pc-'+i;
+    card.innerHTML=`
+      <div class="pcard-img" style="background:${th.bg}">
+        <img class="pcard-photo" src="${imgSrc}" alt="${p.name}"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
+             onload="this.nextElementSibling.style.display='none'">
+        <div class="pcard-emoji" style="display:flex;align-items:center;justify-content:center;width:100%;height:100%">${p.card_emoji||'📦'}</div>
+        <div class="pcard-badge">✦ ${p.badge}</div>
+      </div>
+      <div class="pcard-body">
+        <div class="pcard-name">${p.name}</div>
+        <div class="pcard-specs">${(p.specs||[]).map(s=>`<span class="pcard-spec">${s}</span>`).join('')}</div>
+        <div class="pcard-why-lbl" style="color:${th.ac}">WHY THIS IS FOR YOU</div>
+        <div class="pcard-why">${p.why}</div>
+        <button class="pcard-more-btn" onclick="toggleDet(this)">⚙ More details ▾</button>
+        <div class="pcard-det">${p.more_details||''}</div>
+        <div class="pcard-stores">${stores}</div>
+      </div>`;
+    scroll.appendChild(card);
+    const dot=document.createElement('div');
+    dot.className='sdot'+(i===0?' active':'');dot.id='sd-'+i;
+    dots.appendChild(dot);
+  });
+
+  scroll.addEventListener('scroll',()=>{
+    const idx=Math.round(scroll.scrollLeft/281);
+    products.forEach((_,i)=>$('sd-'+i)?.classList.toggle('active',i===idx));
+  },{passive:true});
+
+  const wrap=document.createElement('div');
+  wrap.appendChild(scroll);wrap.appendChild(dots);
+  return wrap; // caller appends to chat feed
+}
+
+function hlCard(i){
+  // Scope to current card set — old sets in chat feed must not be affected
+  const sc=$('cards-scroll');if(!sc)return;
+  const pcards=[...sc.querySelectorAll('.pcard')];
+  const dots=[...($('sdots')?.querySelectorAll('.sdot')||[])];
+  pcards.forEach((c,j)=>{
+    c.classList.toggle('active',j===i);
+    const det=c.querySelector('.pcard-det'),btn=det?.previousElementSibling;
+    if(j!==i&&det){det.classList.remove('open');if(btn)btn.textContent='⚙ More details ▾';}
+  });
+  const activeCard=pcards[i];
+  if(activeCard){
+    const det=activeCard.querySelector('.pcard-det'),btn=det?.previousElementSibling;
+    if(det){det.classList.add('open');if(btn)btn.textContent='⚙ Less ▴';}
+    sc.scrollTo({left:activeCard.offsetLeft-20,behavior:'smooth'});
+  }
+  dots.forEach((d,j)=>d.classList.toggle('active',j===i));
+}
+
+function toggleDet(btn){
+  const det=btn.nextElementSibling;if(!det)return;
+  det.classList.toggle('open');
+  btn.textContent=det.classList.contains('open')?'⚙ Less ▴':'⚙ More details ▾';
+}
+
+function buildPurchaseCard(d){
+  const imgSrc=productImgUrl(d.card_emoji||'📦',d.product_name||'product',400,200);
+  const storesHtml=Object.entries(d.stores||{}).map(([s,pr])=>`
+    <a class="buy-btn${s===d.best_store?' best':''}" href="#" onclick="return false">
+      <div class="buy-btn-store" style="color:${SCOLORS[s]||'#333'}">${SNAMES[s]||s}</div>
+      <div class="buy-btn-price">₹${Number(pr).toLocaleString('en-IN')}</div>
+      ${s===d.best_store?'<div class="buy-btn-tag">Best Price</div>':''}
+    </a>`).join('');
+  const wrap=document.createElement('div');
+  wrap.className='cf-purchase-card';
+  wrap.innerHTML=`
+    <div class="cf-purchase-photo">
+      <img src="${imgSrc}" alt="${d.product_name||''}"
+           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
+           onload="this.nextElementSibling.style.display='none'">
+      <div class="cf-purchase-photo-badge">${d.card_emoji||'📦'}</div>
+    </div>
+    <div class="cf-purchase-body">
+      <div class="cf-purchase-badge">✦ ${d.badge||'Aria Recommends'}</div>
+      <div class="cf-purchase-name">${d.product_name||''}</div>
+      <div class="cf-purchase-price">${d.price?'₹'+Number(d.price).toLocaleString('en-IN'):''}</div>
+      <div class="cf-purchase-why">${d.why||''}</div>
+      <div class="cf-purchase-stores">${storesHtml}</div>
+      <button class="cf-purchase-wa" onclick="chip('Send to WhatsApp')">📱 Send to WhatsApp</button>
+    </div>`;
+  return wrap;
+}
+
+function hlCompareRow(i){
+  document.querySelectorAll('.cmp-row').forEach((row,j)=>row.classList.toggle('active',j===i));
+}
+
+// ─── COMPARE ─────────────────────────────────────────────
+function buildCompare(d){
+  const names=d.product_names||[];
+  const emojis=S.products.map(p=>p.card_emoji||'📦');
+  const prices=S.products.map(p=>p.price?`₹${Number(p.price).toLocaleString('en-IN')}`:'');
+
+  // Product mini-cards row
+  $('cmp-prod-row').innerHTML=names.map((n,i)=>`
+    <div class="cmp-prod-mini">
+      <div class="cmp-prod-emoji">${emojis[i]||'📦'}</div>
+      <div class="cmp-prod-name">${n}</div>
+      <div class="cmp-prod-price">${prices[i]||''}</div>
+    </div>`).join('');
+
+  // Pill-cell rows
+  $('cmp-rows').innerHTML=(d.specs||[]).map(row=>{
+    const cells=row.values.map((v,i)=>{
+      const w=row.winner===i;
+      return `<div class="cmp-cell${w?' win':''}">${w?'🏆 ':''}${v}</div>`;
+    }).join('');
+    return `<div class="cmp-row"><div class="cmp-spec-lbl">${row.label}</div><div class="cmp-cells">${cells}</div></div>`;
+  }).join('');
+
+  // Verdict card
+  $('cmp-verdict').innerHTML=`
+    <div class="verdict-card">
+      <div class="verdict-lbl">🏆 Aria's Verdict</div>
+      <div class="verdict-txt">${d.tts_text||''}</div>
+    </div>`;
+  $('cmp-sub').textContent=`${names.length} products · Aria's analysis`;
+}
+
+// ─── HISTORY ─────────────────────────────────────────────
+function showHistory(){
+  const body=$('hist-body');
+  const turns=S.msgs.filter(m=>m.role!=='system');
+  if(!turns.length){
+    body.innerHTML='<div class="hist-empty"><div class="hist-empty-icon">💬</div><div>No conversation yet.<br>Start by tapping a category!</div></div>';
+  }else{
+    body.innerHTML=turns.map(m=>{
+      if(m.role==='user'){
+        return `<div class="hist-turn"><div class="hist-you-row"><div class="hist-you-bubble">${m.content}</div></div></div>`;
+      }
+      let txt=m.content,extra='';
+      try{
+        const j=JSON.parse(txt);
+        txt=j.tts_text||j.question||'[Response]';
+        if(j.action==='show_products'&&j.products){
+          extra=`<div class="hist-prods">${j.products.map(p=>`
+            <div class="hist-prod-chip">
+              <span class="hist-prod-em">${p.card_emoji||'📦'}</span>
+              <div><div class="hist-prod-nm">${p.name}</div>
+              <div class="hist-prod-pr">₹${Number(p.price).toLocaleString('en-IN')}</div></div>
+            </div>`).join('')}</div>`;
+        }
+      }catch(e){}
+      return `<div class="hist-turn">
+        <div class="hist-aria-row">
+          <div class="hist-av">A</div>
+          <div class="hist-aria-bubble">${txt}</div>
+        </div>${extra}
+      </div>`;
+    }).join('');
+    setTimeout(()=>body.scrollTop=body.scrollHeight,50);
+  }
+  showScreen('history');
+}
+
+// ─── INTERACTIONS ─────────────────────────────────────────
+async function startDemo(){
+  $('overlay').style.display='none';
+  try{
+    const au=new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=');
+    await au.play();
+  }catch(e){}
+  initSTT();
+  S.msgs=[{role:'system',content:SYS}];
+  S.products=[];S.chatMode=false;
+  $('chat-feed').innerHTML='';$('chat-chips').innerHTML='';
+  showScreen('home'); // home screen until first products appear
+  const greet=S.lang==='hi'
+    ?'नमस्ते! मैं Neha हूं, आपकी personal shopping assistant! आज मैं आपकी क्या मदद कर सकती हूं?'
+    :"Hey! I'm Neha, your personal shopping assistant! How can I help you today?";
+  await speak(greet);
+  startListen();
+}
+
+function tapHomeMic(){
+  if(S.isListening){stopListen();return}
+  $('fu-ctx').textContent='What can Aria help you find?';
+  $('fu-q').textContent='What are you looking to buy today?';
+  $('fu-qnum').textContent='Aria is listening';
+  $('fu-tx').textContent='Listening...';
+  $('fu-prev').innerHTML='';$('fu-chips').innerHTML='';
+  showScreen('followup');startListen();
+}
+
+function selectCat(cat){
+  S.prevAnswers=[];S.products=[];
+  $('nav-home')?.classList.remove('active');
+  callAria('I want to buy a '+cat);
+}
+
+function tapMic(){
+  if(S.isListening){stopListen();return}
+  if(S.isSpeaking)return;
+  startListen();
+}
+
+function chip(txt){stopListen();setTimeout(()=>callAria(txt),250)}
+
+function goHome(){
+  S.chatMode=false;
+  showScreen('home');stopListen();
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  $('nav-home')?.classList.add('active');
+}
+
+function navBack(){
+  showScreen('chat');
+}
+
+function handleInput(txt){
+  if(!txt||!txt.trim())return;
+  S.prevAnswers.push(txt);callAria(txt);
+}
+
+function toggleLang(){
+  S.lang=S.lang==='en'?'hi':'en';
+  const lbl=S.lang==='hi'?'English':'हिंदी';
+  ['lbtn-home','lbtn-fu','lbtn-pr'].forEach(id=>{const b=$(id);if(b)b.textContent=lbl});
+  if(rec)rec.lang=S.lang==='hi'?'hi-IN':'en-IN';
+  // Language reminder is injected fresh on every callAria() — no history pollution needed
+}
+
+function openType(){$('type-modal').classList.add('open');$('type-inp').focus()}
+function closeType(){$('type-modal').classList.remove('open')}
+function sendType(){
+  const v=$('type-inp').value.trim();
+  if(!v)return;$('type-inp').value='';closeType();chip(v);
+}
+$('type-inp').addEventListener('keydown',e=>{if(e.key==='Enter')sendType()});
+</script>
+</body>
+</html>
